@@ -1,0 +1,5 @@
+# Treesitter compiled parsers (rebuilt by :TSUpdate)
+/parser/
+
+# Undo history (machine-local)
+/undo/
