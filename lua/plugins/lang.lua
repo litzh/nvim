@@ -12,7 +12,7 @@ return {
         end,
     },
 
-    -- Go: vim-go provides tooling (GoTest, GoDescribe, GoChannelPeers, etc.)
+    -- Go: vim-go provides tooling (GoTest, GoImplements, GoReferrers, etc.)
     -- beyond what gopls offers. Its LSP/completion/def features are disabled
     -- to avoid conflict with nvim-lspconfig.
     {
@@ -26,19 +26,17 @@ return {
             vim.g.go_code_completion_enabled = 0
         end,
         init = function()
-            -- K/gi/gr intentionally shadow LSP bindings in Go buffers.
-            -- LSP navigation still available via gd / gS / <leader>ca etc.
+            -- gi/gr intentionally shadow LSP bindings in Go buffers.
+            -- Other LSP navigation remains available via gd / K / gS etc.
             vim.api.nvim_create_autocmd("FileType", {
                 group   = vim.api.nvim_create_augroup("go_maps", { clear = true }),
                 pattern = "go",
                 callback = function()
                     local o = { buffer = true }
-                    vim.keymap.set("n", "K",     "<cmd>GoDescribe<CR>",     o)
                     vim.keymap.set("n", "<C-k>", "<cmd>GoInfo<CR>",         o)
                     vim.keymap.set("n", "gi",    "<cmd>GoImplements<CR>",   o)
                     vim.keymap.set("n", "gr",    "<cmd>GoReferrers<CR>",    o)
                     vim.keymap.set("n", "gb",    "<cmd>GoDefStack<CR>",     o)
-                    vim.keymap.set("n", "gc",    "<cmd>GoChannelPeers<CR>", o)
                 end,
             })
         end,

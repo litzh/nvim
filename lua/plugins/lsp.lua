@@ -22,6 +22,7 @@ return {
 
             local servers = {
                 rust_analyzer = {},
+                gopls         = {},
                 clangd        = {
                     cmd = {
                         "clangd",

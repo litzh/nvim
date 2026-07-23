@@ -37,7 +37,7 @@ Personal Neovim configuration in Lua. Migrated from Vim + vim-plug.
 | `node` | Copilot | `brew install node` |
 
 LSP servers are managed by Mason (`:MasonInstall <name>`). Installed servers:
-`rust-analyzer`, `clangd`, `zls`, `bash-language-server`, `pyright`,
+`rust-analyzer`, `gopls`, `clangd`, `zls`, `bash-language-server`, `pyright`,
 `typescript-language-server`, `sourcekit` (macOS), `jdtls` (Java)
 
 ## First-time Setup
@@ -56,7 +56,7 @@ To restore the exact plugin versions from `lazy-lock.json`:
 
 Leader key: `<Space>`
 
-### LSP (all buffers)
+### LSP (LSP-attached buffers)
 
 | Key | Action |
 |---|---|
@@ -98,15 +98,14 @@ Leader key: `<Space>`
 | `]f` / `[f` | Next / previous function |
 | `]c` / `[c` | Next / previous class |
 
-### Go (vim-go, overrides LSP bindings in Go buffers)
+### Go (vim-go, overrides `gi`/`gr` in Go buffers)
 
 | Key | Action |
 |---|---|
-| `K` | GoDescribe |
+| `<C-k>` | GoInfo |
 | `gi` | GoImplements |
 | `gr` | GoReferrers |
 | `gb` | GoDefStack |
-| `gc` | GoChannelPeers |
 
 ## Notes
 
