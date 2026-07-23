@@ -1,3 +1,11 @@
+local formatter_by_ft = {
+    c    = "clang_format",
+    cpp  = "clang_format",
+    rust = "rustfmt",
+    go   = "goimports",
+    java = "google-java-format",
+}
+
 return {
     {
         "stevearc/conform.nvim",
@@ -6,16 +14,15 @@ return {
                 c    = { "clang_format" },
                 cpp  = { "clang_format" },
                 rust = { "rustfmt" },
+                go   = { "goimports" },
                 java = { "google-java-format" },
             },
             formatters = {
                 clang_format = {
-                    -- Prefer a project-level .clang-format file when present.
-                    -- The inline style below is the fallback.
-                    prepend_args = function()
+                    prepend_args = function(_, ctx)
                         local found = vim.fs.find(".clang-format", {
                             upward = true,
-                            path   = vim.fn.expand("%:p:h"),
+                            path   = ctx.dirname,
                         })
                         if #found > 0 then return {} end
                         return {
@@ -51,10 +58,12 @@ return {
                 },
             },
             format_on_save = function(bufnr)
-                local ft = vim.bo[bufnr].filetype
-                if ft == "c" or ft == "cpp" or ft == "rust" or ft == "java" then
-                    return { timeout_ms = 1000, lsp_format = "never" }
-                end
+                local formatter = formatter_by_ft[vim.bo[bufnr].filetype]
+                if not formatter then return nil end
+
+                local info = require("conform").get_formatter_info(formatter, bufnr)
+                if not info.available then return nil end
+                return { timeout_ms = 1000, lsp_format = "never" }
             end,
         },
     },

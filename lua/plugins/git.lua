@@ -12,12 +12,18 @@ return {
             },
             on_attach = function(bufnr)
                 local gs = require("gitsigns")
-                local o  = { buffer = bufnr }
-                vim.keymap.set("n", "]h",         gs.next_hunk,  o)
-                vim.keymap.set("n", "[h",         gs.prev_hunk,  o)
-                vim.keymap.set("n", "<leader>hs", gs.stage_hunk, o)
-                vim.keymap.set("n", "<leader>hu", gs.reset_hunk, o)
-                vim.keymap.set("n", "<leader>hb", gs.blame_line, o)
+                local function opts(desc)
+                    return { buffer = bufnr, desc = desc }
+                end
+                vim.keymap.set("n", "]h", function()
+                    gs.nav_hunk("next")
+                end, opts("Next Git hunk"))
+                vim.keymap.set("n", "[h", function()
+                    gs.nav_hunk("prev")
+                end, opts("Previous Git hunk"))
+                vim.keymap.set("n", "<leader>hs", gs.stage_hunk, opts("Stage Git hunk"))
+                vim.keymap.set("n", "<leader>hu", gs.reset_hunk, opts("Reset Git hunk"))
+                vim.keymap.set("n", "<leader>hb", gs.blame_line, opts("Blame line"))
             end,
         },
     },

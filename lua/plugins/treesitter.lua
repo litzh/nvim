@@ -1,22 +1,16 @@
 return {
     {
         "nvim-treesitter/nvim-treesitter",
+        lazy  = false,
         build = ":TSUpdate",
-        -- New API: require("nvim-treesitter").setup() only takes { install_dir }.
-        -- Highlight and indent are enabled via vim.treesitter directly (always-on
-        -- in Neovim 0.9+). The setup call here just ensures parsers are installed.
         config = function()
             require("nvim-treesitter").setup()
 
-            -- Install parsers on startup (async, non-blocking)
-            require("nvim-treesitter.install").install({
-                "c", "cpp", "rust", "go", "python",
-                "javascript", "typescript", "tsx",
-                "bash", "lua", "zig",
-                "haskell", "swift", "typst", "java",
-                "json", "toml", "yaml",
-                "markdown", "markdown_inline",
-                "vim", "vimdoc", "regex", "query",
+            vim.api.nvim_create_autocmd("FileType", {
+                group = vim.api.nvim_create_augroup("treesitter_start", { clear = true }),
+                callback = function(ev)
+                    pcall(vim.treesitter.start, ev.buf)
+                end,
             })
         end,
     },
@@ -34,10 +28,19 @@ return {
                 move   = { set_jumps = true },
             })
 
-            -- Select text objects
+            local function safe_call(fn, ...)
+                local ok = pcall(fn, ...)
+                if not ok then
+                    vim.notify(
+                        "Treesitter parser or textobjects query is unavailable for this buffer",
+                        vim.log.levels.WARN
+                    )
+                end
+            end
+
             local function map_select(lhs, query)
                 vim.keymap.set({ "x", "o" }, lhs, function()
-                    sel.select_textobject(query, "textobjects")
+                    safe_call(sel.select_textobject, query, "textobjects")
                 end)
             end
             map_select("af", "@function.outer")
@@ -47,10 +50,9 @@ return {
             map_select("aa", "@parameter.outer")
             map_select("ia", "@parameter.inner")
 
-            -- Move between text objects
             local function map_move(lhs, fn, query)
                 vim.keymap.set({ "n", "x", "o" }, lhs, function()
-                    fn(query, "textobjects")
+                    safe_call(fn, query, "textobjects")
                 end)
             end
             map_move("]f", move.goto_next_start,     "@function.outer")

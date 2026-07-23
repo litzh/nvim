@@ -15,16 +15,46 @@ return {
                     if plt.is_windows then
                         return vim.fn.executable("cmake") == 1
                     end
-                    return vim.fn.executable("make") == 1 and vim.fn.executable("gcc") == 1
+                    return vim.fn.executable("make") == 1
+                        and (vim.fn.executable("cc") == 1
+                            or vim.fn.executable("gcc") == 1
+                            or vim.fn.executable("clang") == 1)
                 end,
             },
         },
         keys = {
-            { "<leader>ff", "<cmd>Telescope find_files<cr>",  desc = "Find files" },
-            { "<leader>fg", "<cmd>Telescope live_grep<cr>",   desc = "Live grep" },
-            { "<leader>fb", "<cmd>Telescope buffers<cr>",     desc = "Buffers" },
-            -- <leader>fs: whole-word grep (mirrors old ack.vim -w behaviour)
-            { "<leader>fs", "<cmd>Telescope grep_string<cr>", desc = "Grep word under cursor" },
+            {
+                "<leader>ff",
+                function() require("telescope.builtin").find_files() end,
+                desc = "Find files",
+            },
+            {
+                "<leader>fg",
+                function()
+                    if not plt.find_bin("rg") then
+                        vim.notify("live_grep requires ripgrep (rg)", vim.log.levels.WARN)
+                        return
+                    end
+                    require("telescope.builtin").live_grep()
+                end,
+                desc = "Live grep",
+            },
+            {
+                "<leader>fb",
+                function() require("telescope.builtin").buffers() end,
+                desc = "Buffers",
+            },
+            {
+                "<leader>fs",
+                function()
+                    if not plt.find_bin("rg") then
+                        vim.notify("grep_string requires ripgrep (rg)", vim.log.levels.WARN)
+                        return
+                    end
+                    require("telescope.builtin").grep_string()
+                end,
+                desc = "Grep word under cursor",
+            },
         },
         config = function()
             local telescope = require("telescope")

@@ -1,69 +1,121 @@
 # Neovim Config
 
-Personal Neovim configuration in Lua. Migrated from Vim + vim-plug.
+Lua-based Neovim configuration built around native LSP, Treesitter,
+blink.cmp, conform.nvim, Telescope, and gitsigns.
 
 ## Structure
 
-```
+```text
 ~/.config/nvim/
-├── init.lua              # Entry point: set leader, load config/*
-├── lazy-lock.json        # Plugin version lockfile
+├── init.lua
+├── lazy-lock.json
 └── lua/
     ├── config/
-    │   ├── options.lua   # vim.opt settings
-    │   ├── keymaps.lua   # Global keymaps + LspAttach
-    │   ├── lazy.lua      # lazy.nvim bootstrap
-    │   └── platform.lua  # OS detection helpers (is_mac, find_bin)
+    │   ├── options.lua
+    │   ├── keymaps.lua
+    │   ├── lazy.lua
+    │   └── platform.lua
     └── plugins/
-        ├── ui.lua        # Colorscheme (kanagawa), statusline (lualine)
-        ├── search.lua    # Telescope + fzf-native
-        ├── git.lua       # vim-fugitive, gitsigns
-        ├── completion.lua # blink.cmp, copilot.vim
-        ├── treesitter.lua # nvim-treesitter, textobjects
-        ├── lsp.lua       # nvim-lspconfig, nvim-jdtls (Java)
-        ├── format.lua    # conform.nvim
-        └── lang.lua      # Language plugins (rust.vim, vim-go, etc.)
+        ├── ui.lua
+        ├── search.lua
+        ├── git.lua
+        ├── completion.lua
+        ├── treesitter.lua
+        ├── lsp.lua
+        └── format.lua
 ```
 
 ## Requirements
 
-| Dependency | Purpose | Install |
-|---|---|---|
-| Neovim >= 0.11 | — | `brew install neovim` |
-| git | Plugin download | system |
-| `tree-sitter` CLI | Compile treesitter parsers | `brew install tree-sitter-cli` |
-| `rg` (ripgrep) | Telescope grep | `brew install ripgrep` |
-| `make` + `gcc` | telescope-fzf-native | system |
-| `node` | Copilot | `brew install node` |
+Required:
 
-LSP servers are managed by Mason (`:MasonInstall <name>`). Installed servers:
-`rust-analyzer`, `gopls`, `clangd`, `zls`, `bash-language-server`, `pyright`,
-`typescript-language-server`, `sourcekit` (macOS), `jdtls` (Java)
+- Neovim 0.12 or newer
+- Git
+
+Optional tools are detected before use. Missing language servers, formatters,
+`rg`, compilers, or language toolchains do not prevent Neovim from starting.
+
+- `tree-sitter` plus a C compiler: install/update Treesitter parsers
+- `rg`: Telescope live grep
+- `make` plus a C compiler: telescope-fzf-native
+- Language servers: `gopls`, `rust-analyzer`, `clangd`, `zls`,
+  `bash-language-server`, `pyright-langserver`,
+  `typescript-language-server`, `sourcekit-lsp`, `jdtls`
+- Formatters: `goimports`, `rustfmt`, `clang-format`,
+  `google-java-format`
+
+Mason is available as an optional installer:
+
+```vim
+:Mason
+:MasonInstall jdtls google-java-format
+```
+
+Language tools already installed through Homebrew, SDKMAN, `uv`, Go, Cargo,
+or the system package manager can be used directly from `PATH`.
 
 ## First-time Setup
 
 ```sh
 git clone <repo> ~/.config/nvim
-nvim  # lazy.nvim auto-installs all plugins on first launch
+nvim
 ```
 
-To restore the exact plugin versions from `lazy-lock.json`:
+lazy.nvim installs plugins on first launch. Install the parsers you need
+explicitly so an offline startup never attempts a network download:
+
+```vim
+:TSInstall c cpp rust go python javascript typescript tsx bash lua zig
+:TSInstall java json toml yaml markdown markdown_inline vim vimdoc regex query
 ```
+
+Installed parsers are enabled automatically. Missing parsers fall back to
+Neovim's built-in syntax files.
+
+To restore locked plugin versions:
+
+```vim
 :Lazy restore
 ```
 
+## Language Support
+
+### Go
+
+- `gopls`: navigation, diagnostics, refactoring, and code actions
+- `goimports` through conform.nvim: format on save and organize imports
+- Treesitter: highlighting and text objects
+
+No separate Go all-in-one plugin is required.
+
+### Java
+
+`jdtls` is enabled only when both the executable and a Java 21+ runtime are
+available. The launcher prefers an installed SDKMAN Java 21+ runtime without
+changing SDKMAN's global `current` version. Project JDKs installed through
+SDKMAN are exposed to jdtls, including Java 8 as `JavaSE-1.8`.
+
+Each project gets a workspace derived from its canonical root path, avoiding
+collisions between projects with the same directory name.
+
+### C, C++, and Swift
+
+`clangd` handles C/C++ on every platform. On macOS, `sourcekit-lsp` is limited
+to Swift so the two servers do not attach to the same C/C++ buffer.
+
 ## Key Mappings
 
-Leader key: `<Space>`
+Leader key: `<Space>`.
 
-### LSP (LSP-attached buffers)
+### LSP-attached buffers
 
 | Key | Action |
 |---|---|
 | `gd` | Go to definition |
 | `gr` | References |
 | `gi` | Implementation |
-| `gS` | Workspace symbol search |
+| `gs` | Document symbols |
+| `gS` | Workspace symbols |
 | `K` | Hover |
 | `<leader>rn` | Rename |
 | `<leader>ca` | Code action |
@@ -77,9 +129,9 @@ Leader key: `<Space>`
 | `<leader>ff` | Find files |
 | `<leader>fg` | Live grep |
 | `<leader>fb` | Buffers |
-| `<leader>fs` | Grep word under cursor (whole-word) |
+| `<leader>fs` | Grep word under cursor |
 
-### Git (gitsigns)
+### Git
 
 | Key | Action |
 |---|---|
@@ -88,7 +140,7 @@ Leader key: `<Space>`
 | `<leader>hu` | Reset hunk |
 | `<leader>hb` | Blame line |
 
-### Treesitter textobjects
+### Treesitter text objects
 
 | Key | Action |
 |---|---|
@@ -98,18 +150,4 @@ Leader key: `<Space>`
 | `]f` / `[f` | Next / previous function |
 | `]c` / `[c` | Next / previous class |
 
-### Go (vim-go, overrides `gi`/`gr` in Go buffers)
-
-| Key | Action |
-|---|---|
-| `<C-k>` | GoInfo |
-| `gi` | GoImplements |
-| `gr` | GoReferrers |
-| `gb` | GoDefStack |
-
-## Notes
-
-- **Fonts**: No Nerd Font required. If you install one and set it in your terminal, remove the `section_separators` / `component_separators` override in `plugins/ui.lua` and the `signs` override in `plugins/git.lua` to restore the default icons.
-- **clang-format**: Uses inline style as fallback. A `.clang-format` file in the project root takes precedence automatically.
-- **Java**: Requires `:MasonInstall jdtls`. Java runtimes are auto-detected from SDKMAN; falls back to `java` in PATH.
-- **Python LSP**: Uses `pyright` (installed via `uv tool install pyright`).
+The UI uses ASCII separators and does not require a Nerd Font.
