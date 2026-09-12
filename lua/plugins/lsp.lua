@@ -80,6 +80,36 @@ local function java_launcher_home()
     end
 end
 
+-- Latest lombok jar from the local Maven repository, if any.
+local function lombok_jar()
+    local base = vim.fn.expand("~/.m2/repository/org/projectlombok/lombok")
+    local handle = vim.uv.fs_scandir(base)
+    if not handle then return nil end
+
+    local function newer(a, b)
+        local ka, kb = {}, {}
+        for n in a:gmatch("%d+") do ka[#ka + 1] = tonumber(n) end
+        for n in b:gmatch("%d+") do kb[#kb + 1] = tonumber(n) end
+        for i = 1, math.max(#ka, #kb) do
+            local x, y = ka[i] or 0, kb[i] or 0
+            if x ~= y then return x > y end
+        end
+        return false
+    end
+
+    local best
+    while true do
+        local entry = vim.uv.fs_scandir_next(handle)
+        if not entry then break end
+        local jar = ("%s/%s/lombok-%s.jar"):format(base, entry, entry)
+        if vim.fn.filereadable(jar) == 1
+            and (not best or newer(entry, best.version)) then
+            best = { version = entry, jar = jar }
+        end
+    end
+    return best and best.jar or nil
+end
+
 local function jdtls_cmd(jdtls_bin)
     return function(dispatchers, config)
         local root = config.root_dir or vim.fn.getcwd()
@@ -89,6 +119,15 @@ local function jdtls_cmd(jdtls_bin)
 
         for arg in (vim.env.JDTLS_JVM_ARGS or ""):gmatch("%S+") do
             table.insert(cmd, "--jvm-arg=" .. arg)
+        end
+
+        -- Lombok generates code by rewriting the AST at compile time, so
+        -- jdtls needs it as a javaagent to see generated methods/fields.
+        if not (vim.env.JDTLS_JVM_ARGS or ""):find("lombok", 1, true) then
+            local jar = lombok_jar()
+            if jar then
+                table.insert(cmd, "--jvm-arg=-javaagent:" .. jar)
+            end
         end
 
         return vim.lsp.rpc.start(cmd, dispatchers, {
@@ -143,6 +182,11 @@ return {
                     )
                     vim.lsp.config(name, config)
                     vim.lsp.enable(name)
+                elseif server.condition ~= false then
+                    vim.notify(
+                        ("LSP %s skipped: binary %q not found in PATH"):format(name, server.bin),
+                        vim.log.levels.WARN
+                    )
                 end
             end
 
@@ -155,6 +199,7 @@ return {
                     capabilities = capabilities,
                     settings = {
                         java = {
+                            jdt           = { ls = { lombokSupport = { enabled = true } } },
                             configuration = { runtimes = java_runtimes() },
                             eclipse       = { downloadSources = true },
                             maven         = { downloadSources = true },
@@ -164,6 +209,11 @@ return {
                     },
                 })
                 vim.lsp.enable("jdtls")
+            else
+                local reason = not jdtls_bin
+                    and "binary not found in PATH (install via :MasonInstall jdtls)"
+                    or  "no JDK >= 21 found to launch jdtls"
+                vim.notify("LSP jdtls skipped: " .. reason, vim.log.levels.WARN)
             end
         end,
     },
